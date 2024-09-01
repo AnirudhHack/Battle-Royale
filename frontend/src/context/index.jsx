@@ -4,7 +4,7 @@ import Web3Modal from 'web3modal';
 import { useNavigate } from 'react-router-dom';
 
 import { GetParams } from '../utils/Onboard';
-import { ABI, ADDRESS, wormHoleAssetabi, WORMHOLEASSETADDRESSBASE, WORMHOLEASSETADDRESSARBITRUM } from '../contract';
+import { ABI, ADDRESS, ARBITRUMADDRESS, wormHoleAssetabi, WORMHOLEASSETADDRESSBASE, WORMHOLEASSETADDRESSARBITRUM } from '../contract';
 import { createEventListeners } from './createEventListeners';
 
 const GlobalContext = createContext();
@@ -85,7 +85,8 @@ export const GlobalContextProvider = ({ children }) => {
       const connection = await web3Modal.connect();
       const newProvider = new ethers.providers.Web3Provider(connection);
       const signer = newProvider.getSigner();
-      const newContract = new ethers.Contract(ADDRESS, ABI, signer);
+      const addressOfContract = getChainID() == 84532 ? ADDRESS : ARBITRUMADDRESS
+      const newContract = new ethers.Contract(addressOfContract, ABI, signer);
       const conAddress = getChainID() == 84532 ? WORMHOLEASSETADDRESSBASE : WORMHOLEASSETADDRESSARBITRUM
       const wormholeAssetContract = new ethers.Contract(conAddress, wormHoleAssetabi, signer);
       const wormholeAssetContractGetter = new ethers.Contract(conAddress, wormHoleAssetabi, newProvider);
