@@ -5,22 +5,31 @@ import "./wormhole/IWormholeRelayer.sol";
 import "./wormhole/IWormholeReceiver.sol";
 
 contract AssetTransferWormhole is IWormholeReceiver {
-    struct BattleAssets{
+
+    event AssetsTransfer(address sender, uint16 targetChain, address targetAddress, uint[] assetIds);
+
+    IWormholeRelayer public immutable wormholeRelayer;
+    address public owner;
+
+    struct BattleAsset{
         uint id;
         string name;
         uint AssetType;
+        uint price; // Price in wei
+    }
+    uint public assetCounter;
+    uint256 constant GAS_LIMIT = 50_000;
+    mapping(uint => BattleAsset) public assets; // Mapping from asset ID to BattleAsset
+    mapping(address=>uint[]) public playerAssetIds;
+    mapping(address=>mapping(uint=> bool)) public playerAssetExist;
+
+    function getAllAssetsOfPlayer(address _player)external view returns(uint[] memory){
+        return playerAssetIds[_player];
     }
 
-    event GreetingReceived(string greeting, uint16 senderChain, address sender);
-
-    uint256 constant GAS_LIMIT = 50_000;
-
-    IWormholeRelayer public immutable wormholeRelayer;
-
-    string public latestGreeting;
-
-    constructor(address _wormholeRelayer) {
+    constructor(address _wormholeRelayer, address _owner) {
         wormholeRelayer = IWormholeRelayer(_wormholeRelayer);
+        owner = _owner;
     }
 
     function quoteCrossChainAsset(
@@ -33,26 +42,32 @@ contract AssetTransferWormhole is IWormholeReceiver {
         );
     }
 
-    function sendCrossChainAsset(
+    function syncCrossChainAsset(
         uint16 targetChain,
         address targetAddress,
-        uint[] calldata _assets
+        uint[] calldata _assetsIds
     ) public payable {
         uint256 cost = quoteCrossChainAsset(targetChain);
         require(msg.value == cost);
+        for(uint i=0; i<_assetsIds.length; i++){
+            if(!playerAssetExist[msg.sender][_assetsIds[i]]) revert("asset not found");
+        }
+
         wormholeRelayer.sendPayloadToEvm{value: cost}(
             targetChain,
             targetAddress,
-            abi.encode(encodeAssetIds(_assets), msg.sender), 
+            abi.encode(encodeAssetIds(_assetsIds), msg.sender), 
             0, 
             GAS_LIMIT
         );
+
+        emit AssetsTransfer(msg.sender, targetChain, targetAddress, _assetsIds);
     }
 
     function receiveWormholeMessages(
         bytes memory payload,
         bytes[] memory, // additionalVaas
-        bytes32, // address that called 'sendPayloadToEvm' (HelloWormhole contract address)
+        bytes32, // address that called 'sendPayloadToEvm'
         uint16 sourceChain,
         bytes32 // unique identifier of delivery
     ) public payable override {
@@ -65,10 +80,40 @@ contract AssetTransferWormhole is IWormholeReceiver {
         );
         uint[] memory assets = _decodeAssetsIds(assetData);
 
-        emit GreetingReceived(latestGreeting, sourceChain, sender);
+        // sync the assets from source chain to current contract
+        for(uint i = 0; i < assets.length; i++){
+            if(!playerAssetExist[sender][assets[i]]){
+                playerAssetExist[sender][assets[i]] = true;
+                playerAssetIds[sender].push(assets[i]);
+            }
+        }
+
     }
 
-        // Encode a dynamic-size array of uint256 with packed format
+    // Function for the owner to add a new asset
+    function addAsset(string memory _name, uint _assetType, uint _price) public onlyOwner {
+        require(_price > 0, "_price > 0");
+        assets[assetCounter] = BattleAsset(assetCounter, _name, _assetType, _price);
+        assetCounter++;
+    }
+
+    // Function to buy an asset
+    function buyAsset(uint _assetId) public payable {
+        require(_assetId < assetCounter, "Invalid AssetId");
+        require(playerAssetExist[msg.sender][_assetId] == false, "player already have the Asset");
+        BattleAsset memory asset = assets[_assetId];
+        require(msg.value == asset.price, "Incorrect ETH amount sent");
+
+        payable(owner).transfer(msg.value);
+        
+        // Register the asset to the buyer
+        playerAssetExist[msg.sender][_assetId] = true;
+        playerAssetIds[msg.sender].push(_assetId);
+
+    }
+
+
+    // Encode a dynamic-size array of uint256 with packed format
     function encodeAssetIds(uint256[] memory inputArray) private pure returns (bytes memory) {
         return abi.encodePacked(inputArray);
     }
@@ -85,5 +130,10 @@ contract AssetTransferWormhole is IWormholeReceiver {
             decodedArray[i] = value;
         }
         return decodedArray;
+    }
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only owner can perform this action");
+        _;
     }
 }
