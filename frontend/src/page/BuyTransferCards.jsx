@@ -13,31 +13,32 @@ const allAssets = [
     name:"Water", 
     type:0,
     price: "1000000000000",
-    isOwned: false
+    isOwned: false,
+    img: f5
   },
-  
   {
     id: 0,
     name:"Fire", 
     type:0,
     price: "1000000000000",
-    isOwned: false
+    isOwned: false,
+    img: f2
   },
-  
   {
     id: 0,
     name:"Thunder", 
     type:0,
     price: "1000000000000",
-    isOwned: false
+    isOwned: false,
+    img: f4
   },
-  
   {
     id: 0,
-    name:"Wind", 
+    name:"Magic", 
     type:0,
     price: "1000000000000",
-    isOwned: false
+    isOwned: false,
+    img: f3
   }
 ]
 
@@ -202,7 +203,7 @@ const BuyTransferCards = () => {
               // className={`${styles.flexCenter} ${styles.battleGroundCard}`}
               style={{marginRight:"40px", }}
             >
-              <img src={ground.img} alt="saiman"  />
+              <img src={allAssets[index].img} alt="saiman"  />
 
               {/* <div className="info absolute">
                 <p className={styles.battleGroundCardText}>{ground.name}</p>
