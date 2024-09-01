@@ -107,10 +107,10 @@ const BuyTransferCards = () => {
     }, 1000);
   };
 
-  const handleBuy = async () => {
+  const handleBuy = async (index) => {
 
     try {
-      await wormholeAssetContract.buyAsset(0, {value: "1000000000000"});
+      await wormholeAssetContract.buyAsset(index, {value: "1000000000000"});
 
     } catch (error) {
       // setErrorMessage(error);
@@ -225,7 +225,7 @@ const BuyTransferCards = () => {
               :
               <div >
                 <label  style={{ marginTop:'10px', marginRight:"5px" }}htmlFor="name" className="font-rajdhani font-semibold text-2xl text-white mb-3">{ethers.utils.formatEther(myAssets[index].price)} {" ETH"}</label>
-                <CustomButton title="Buy" handleClick={handleBuy} />
+                <CustomButton title="Buy" handleClick={()=>handleBuy(index)} />
               </div>
             }
             </div>
