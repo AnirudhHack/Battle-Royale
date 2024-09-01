@@ -18,7 +18,6 @@ contract AssetTransferWormhole is IWormholeReceiver {
         uint price; // Price in wei
     }
     uint public assetCounter;
-    uint256 constant GAS_LIMIT = 50_000;
     mapping(uint => BattleAsset) public assets; // Mapping from asset ID to BattleAsset
     mapping(address=>uint[]) public playerAssetIds;
     mapping(address=>mapping(uint=> bool)) public playerAssetExist;
@@ -33,21 +32,23 @@ contract AssetTransferWormhole is IWormholeReceiver {
     }
 
     function quoteCrossChainAsset(
-        uint16 targetChain
+        uint16 targetChain,
+        uint256 gasLimit
     ) public view returns (uint256 cost) {
         (cost, ) = wormholeRelayer.quoteEVMDeliveryPrice(
             targetChain,
             0,
-            GAS_LIMIT
+            gasLimit
         );
     }
 
     function syncCrossChainAsset(
         uint16 targetChain,
         address targetAddress,
-        uint[] calldata _assetsIds
+        uint[] calldata _assetsIds,
+        uint256 gasLimit
     ) public payable {
-        uint256 cost = quoteCrossChainAsset(targetChain);
+        uint256 cost = quoteCrossChainAsset(targetChain, gasLimit);
         require(msg.value == cost);
         for(uint i=0; i<_assetsIds.length; i++){
             if(!playerAssetExist[msg.sender][_assetsIds[i]]) revert("asset not found");
@@ -58,7 +59,9 @@ contract AssetTransferWormhole is IWormholeReceiver {
             targetAddress,
             abi.encode(encodeAssetIds(_assetsIds), msg.sender), 
             0, 
-            GAS_LIMIT
+            gasLimit,
+            targetChain,
+            msg.sender
         );
 
         emit AssetsTransfer(msg.sender, targetChain, targetAddress, _assetsIds);

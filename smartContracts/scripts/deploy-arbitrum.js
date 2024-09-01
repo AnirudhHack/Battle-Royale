@@ -7,7 +7,7 @@ async function main() {
   const [deployer] = await ethers.getSigners();
 
   // Replace these values with your actual Wormhole Relayer and owner addresses
-  const wormholeRelayerAddress = "0x93BAD53DDfB6132b0aC8E37f6029163E63372cEE";
+  const wormholeRelayerAddress = "0x7B1bD7a6b4E61c2a123AC6BC2cbfC614437D0470";
   const ownerAddress = deployer.address;
 
   // Compile the contract
@@ -20,10 +20,10 @@ async function main() {
   console.log("AssetTransferWormhole deployed to:", assetTransferWormhole.address);
 
   // Add an asset
-  const tx = await assetTransferWormhole.connect(deployer).addAsset("Water", 0, ethers.utils.parseEther("0.000001")); // Example asset
-  await tx.wait();
+  // const tx = await assetTransferWormhole.connect(deployer).addAsset("Water", 0, ethers.utils.parseEther("0.000001")); // Example asset
+  // await tx.wait();
 
-  console.log("Asset added");
+  // console.log("Asset added");
 }
 
 main()
